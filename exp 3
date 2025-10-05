@@ -1,0 +1,87 @@
+const mongoose = require('mongoose');
+
+// Connect to MongoDB
+mongoose.connect('mongodb://localhost:27017/ecommerceCatalog', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+}).then(() => console.log("Connected to MongoDB"))
+  .catch(err => console.error("Connection error:", err));
+
+// Define Variant Schema
+const variantSchema = new mongoose.Schema({
+  color: String,
+  size: String,
+  stock: Number
+});
+
+// Define Product Schema
+const productSchema = new mongoose.Schema({
+  name: String,
+  price: Number,
+  category: String,
+  variants: [variantSchema]
+});
+
+const Product = mongoose.model('Product', productSchema);
+
+// Insert Sample Products
+async function insertProducts() {
+  await Product.deleteMany({}); // Clear existing data
+
+  await Product.insertMany([
+    {
+      name: "Running Shoes",
+      price: 120,
+      category: "Footwear",
+      variants: [
+        { color: "Red", size: "M", stock: 10 },
+        { color: "Blue", size: "L", stock: 5 }
+      ]
+    },
+    {
+      name: "Winter Jacket",
+      price: 99.99,
+      category: "Clothing",
+      variants: [
+        { color: "Black", size: "M", stock: 8 },
+        { color: "Gray", size: "L", stock: 4 }
+      ]
+    },
+    {
+      name: "Smartphone",
+      price: 699,
+      category: "Electronics",
+      variants: []
+    }
+  ]);
+
+  console.log("Sample products inserted.\n");
+}
+
+// Run Queries
+async function runQueries() {
+  // 1. All Products
+  const allProducts = await Product.find({});
+  console.log("All Products:\n", allProducts);
+
+  // 2. Filter by Category
+  const electronics = await Product.find({ category: "Electronics" });
+  console.log("\nElectronics Category:\n", electronics);
+
+  // 3. Project Variant Color and Stock
+  const variantProjection = await Product.find({}, { "variants.color": 1, "variants.stock": 1, _id: 0 });
+  console.log("\nVariant Color & Stock:\n", variantProjection);
+
+  // 4. Filter by Variant Color
+  const blueVariants = await Product.find({ "variants.color": "Blue" });
+  console.log("\nProducts with Blue Variant:\n", blueVariants);
+}
+
+// Execute
+async function main() {
+  await insertProducts();
+  await runQueries();
+  mongoose.disconnect();
+}
+
+main();
